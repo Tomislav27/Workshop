@@ -1,0 +1,127 @@
+var Metadata = artifacts.require('./Metadata.sol')
+var Token = artifacts.require('./Token.sol')
+var BigNumber = require('bignumber.js')
+let gasPrice = 1000000000 // 1GWEI
+
+let _ = '        '
+
+contract('Token', async function(accounts) {
+  let token, metadata
+
+  before(done => {
+    ;(async () => {
+      try {
+        var totalGas = new BigNumber(0)
+
+        // Deploy Metadata.sol
+        metadata = await Metadata.new()
+        var tx = await web3.eth.getTransactionReceipt(metadata.transactionHash)
+        totalGas = totalGas.plus(tx.gasUsed)
+        console.log(_ + tx.gasUsed + ' - Deploy Metadata')
+        metadata = await Metadata.deployed()
+
+        // Deploy Token.sol
+        token = await Token.new("Token", "TKN", metadata.address)
+        var tx = await web3.eth.getTransactionReceipt(token.transactionHash)
+        totalGas = totalGas.plus(tx.gasUsed)
+        console.log(_ + tx.gasUsed + ' - Deploy Token')
+        token = await Token.deployed()
+
+        console.log(_ + '-----------------------')
+        console.log(_ + totalGas.toFormat(0) + ' - Total Gas')
+        done()
+      } catch (error) {
+        console.error(error)
+        done(false)
+      }
+    })()
+  })
+
+  describe('Token.sol', function() {
+    it('should return metadata uints as strings', async function() {
+      const URI = 'https://domain.com/metadata/'
+
+      let tokenURI_uint = 0
+      let tokenURI_result = await token.tokenURI(tokenURI_uint)
+      assert(
+          URI + tokenURI_uint.toString() === tokenURI_result,
+          'incorrect value "' + tokenURI_result + '" returned'
+      )
+
+      tokenURI_uint = 2345
+      tokenURI_result = await token.tokenURI(tokenURI_uint)
+      assert(
+          URI + tokenURI_uint.toString() === tokenURI_result,
+          'incorrect value "' + tokenURI_result + '" returned'
+      )
+
+      tokenURI_uint = 23452345
+      tokenURI_result = await token.tokenURI(tokenURI_uint)
+      assert(
+          URI + tokenURI_uint.toString() === tokenURI_result,
+          'incorrect value "' + tokenURI_result + '" returned'
+      )
+
+      tokenURI_uint = 134452
+      tokenURI_result = await token.tokenURI(tokenURI_uint)
+      assert(
+          URI + tokenURI_uint.toString() === tokenURI_result,
+          'incorrect value "' + tokenURI_result + '" returned'
+      )
+    })
+  })
+})
+
+function getBlockNumber() {
+  return new Promise((resolve, reject) => {
+    web3.eth.getBlockNumber((error, result) => {
+      if (error) reject(error)
+      resolve(result)
+    })
+  })
+}
+
+function increaseBlocks(blocks) {
+  return new Promise((resolve, reject) => {
+    increaseBlock().then(() => {
+      blocks -= 1
+      if (blocks == 0) {
+        resolve()
+      } else {
+        increaseBlocks(blocks).then(resolve)
+      }
+    })
+  })
+}
+
+function increaseBlock() {
+  return new Promise((resolve, reject) => {
+    web3.currentProvider.sendAsync(
+      {
+        jsonrpc: '2.0',
+        method: 'evm_mine',
+        id: 12345
+      },
+      (err, result) => {
+        if (err) reject(err)
+        resolve(result)
+      }
+    )
+  })
+}
+
+function decodeEventString(hexVal) {
+  return hexVal
+    .match(/.{1,2}/g)
+    .map(a =>
+      a
+        .toLowerCase()
+        .split('')
+        .reduce(
+          (result, ch) => result * 16 + '0123456789abcdefgh'.indexOf(ch),
+          0
+        )
+    )
+    .map(a => String.fromCharCode(a))
+    .join('')
+}
