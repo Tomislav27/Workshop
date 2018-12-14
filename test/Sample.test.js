@@ -1,4 +1,4 @@
-var Sample = artifacts.require('./Sample.sol')
+var Sample = artifacts.require('./Token.sol')
 var BigNumber = require('bignumber.js')
 let gasPrice = 1000000000 // 1GWEI
 
@@ -12,7 +12,7 @@ contract('Sample', async function(accounts) {
       try {
         var totalGas = new BigNumber(0)
 
-        // Deploy Sample.sol
+        // Deploy Token.sol
         sample = await Sample.new()
         var tx = await web3.eth.getTransactionReceipt(sample.transactionHash)
         totalGas = totalGas.plus(tx.gasUsed)
