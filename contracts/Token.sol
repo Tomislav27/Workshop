@@ -1,20 +1,26 @@
 pragma solidity ^0.4.20;
 import "zeppelin-solidity/contracts/token/ERC721/ERC721Token.sol";
+import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
 import './Metadata.sol';
 
 /**
  * The Token contract does this and that...
  */
-contract Token is ERC721Token {
+contract Token is ERC721Token, Ownable {
     address metadata;
     constructor(string name, string symbol, address _metadata) public
-        ERC721Token(name, symbol)
+    ERC721Token(name, symbol)
     {
         metadata = _metadata;
     }
-    function getMetadata() public view returns (address) {
+
+    function updateMetadata(address _metadata) public onlyOwner {
+        metadata = _metadata;
+    }
+    function getMetadata() public  returns (address){
         return metadata;
     }
+
     function tokenURI(uint _tokenId) public view returns (string _infoUrl) {
         address _impl = getMetadata();
         bytes memory data = msg.data;
